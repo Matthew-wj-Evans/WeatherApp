@@ -52,6 +52,7 @@
 #include<windows.h>
 #include<wingdi.h>
 #include "strsafe.h"
+#include "NetworkAPI.cpp"
 
 using namespace std;
 
@@ -90,10 +91,15 @@ LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
             //     hwnd, (HMENU) ID_STATIC_LABEL_ONE, NULL, NULL
             // );
             // ...better?
+            int a = 2, b = 5;
+            int r = a + b;
+            wchar_t resultString[256];
+            swprintf_s(resultString, L"%d", r);
+
             WINDOW labelOne;
             labelOne.SIZE = GetCoordinates(&xCount, &yCount, &row, CONST_DOUBLE, CONST_NORMAL, 0);
             labelOne.id = ID_STATIC_LABEL_ONE;
-            HWND staticLabelOne = PlaceWindow(labelOne, hwnd, new wchar_t[]{L"Label One"}, new wchar_t[]{L"STATIC"});
+            HWND staticLabelOne = PlaceWindow(labelOne, hwnd, resultString, new wchar_t[]{L"STATIC"});
 
             if (staticLabelOne == NULL)
             {

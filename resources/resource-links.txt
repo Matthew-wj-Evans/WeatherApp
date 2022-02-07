@@ -1,7 +1,8 @@
-C++ HTTP GET request
+C++ HTTP GET request:
     https://www.codespeedy.com/send-get-and-post-requests-in-cpp/
 
-OpenWeather Weather API
+OpenWeather Weather API:
     https://openweathermap.org/api
 
-
+C++ Includes:
+    https://stackoverflow.com/questions/8020113/c-include-guards
