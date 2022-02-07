@@ -112,14 +112,9 @@ LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
         {
             /*
             If a handle to a brush is not returned, then DefWindowProc will be returned instead, overwritting 
-            the colours
+            the colours for static controls
             */
-            SetBkMode((HDC)wParam, TRANSPARENT);
             int id = GetDlgCtrlID((HWND) lParam);
-            /*
-                HOW TO:
-                    Get the Id to the evenWindow
-            */
 
             if (id > RANGE_IDS_STATIC_LABEL && id <= (RANGE_IDS_STATIC_LABEL + RANGE_IDS_GAP))
             {
@@ -133,6 +128,7 @@ LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
             }
             else if (id > RANGE_IDS_STATIC_HEADER && id <= (RANGE_IDS_STATIC_HEADER + RANGE_IDS_GAP)) 
             {
+                // Can font 
                 SetTextColor((HDC) wParam, RGB(0,0,0));
                 return (INT_PTR)CreateSolidBrush(RGB(128,128,128));
             }

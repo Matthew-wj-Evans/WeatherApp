@@ -1,0 +1,7 @@
+C++ HTTP GET request
+    https://www.codespeedy.com/send-get-and-post-requests-in-cpp/
+
+OpenWeather Weather API
+    https://openweathermap.org/api
+
+
