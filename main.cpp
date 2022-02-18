@@ -68,8 +68,6 @@ struct WINDOW {
     WINDOW_SIZE SIZE;
 };
 
-
-
 HWND PlaceWindow(WINDOW window, HWND hwnd, wchar_t* name, wchar_t* className);
 WINDOW_SIZE GetCoordinates(int* xCount, int* yCount, int* row, int widthSpan = 1, int heightSpan = 1, bool isRowEnd = 1);
 
@@ -78,8 +76,7 @@ LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
     switch (msg)
     {
         case WM_CREATE:
-        {
-            
+        {       
             int xCount = 0, yCount = 0, row = xCount % CONTROL_POSITION_ROW_COUNT;
             /* Static Labels */
 
@@ -145,12 +142,11 @@ LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
         case WM_CLOSE:
         {
             DestroyWindow(hwnd);
-            return 0;
         }
         break;
         case WM_DESTROY:
         {
-            
+            PostQuitMessage(0);
             return 0;
         }
         break;
