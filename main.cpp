@@ -68,95 +68,15 @@ struct WINDOW {
     WINDOW_SIZE SIZE;
 };
 
+// Windows API Function headers
+LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine, INT nCmdShow);
+
+// Support function headers
 HWND PlaceWindow(WINDOW window, HWND hwnd, wchar_t* name, wchar_t* className);
 WINDOW_SIZE GetCoordinates(int* xCount, int* yCount, int* row, int widthSpan = 1, int heightSpan = 1, bool isRowEnd = 1);
 
-LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-    switch (msg)
-    {
-        case WM_CREATE:
-        {       
-            int xCount = 0, yCount = 0, row = xCount % CONTROL_POSITION_ROW_COUNT;
-            /* Static Labels */
-
-            // HWND staticLabelOne = CreateWindowW(WINDOW_CLASS_STATIC, L"Label One",
-            //     WS_VISIBLE | WS_CHILD,
-            //         CONTROL_POSITION_X_DEFAULT + ((CONTROL_WIDTH_NORMAL + CONTROL_GAP_XY) * row ), 
-            //         CONTROL_POSITION_Y_DEFAULT + ( (CONTROL_HEIGHT_NORMAL + CONTROL_GAP_XY) * yCount), 
-            //         CONTROL_WIDTH_NORMAL, CONTROL_HEIGHT_NORMAL,
-            //     hwnd, (HMENU) ID_STATIC_LABEL_ONE, NULL, NULL
-            // );
-            // ...better?
-            int a = 2, b = 5;
-            int r = a + b;
-            wchar_t resultString[256];
-            swprintf_s(resultString, L"%d", r);
-
-            WINDOW labelOne;
-            labelOne.SIZE = GetCoordinates(&xCount, &yCount, &row, CONST_DOUBLE, CONST_NORMAL, 0);
-            labelOne.id = ID_STATIC_LABEL_ONE;
-            HWND staticLabelOne = PlaceWindow(labelOne, hwnd, resultString, new wchar_t[]{L"STATIC"});
-
-            if (staticLabelOne == NULL)
-            {
-                MessageBox(NULL, L"Static Label One creation failed.", L"Error", MB_ICONEXCLAMATION);
-                exit(EXIT_FAILURE);
-            }
-        }
-        break;
-        case WM_COMMAND:
-        {}
-        break;
-        case WM_NOTIFY:
-        {}
-        break;
-        case WM_CTLCOLORSTATIC:
-        {
-            /*
-            If a handle to a brush is not returned, then DefWindowProc will be returned instead, overwritting 
-            the colours for static controls
-            */
-            int id = GetDlgCtrlID((HWND) lParam);
-
-            if (id > RANGE_IDS_STATIC_LABEL && id <= (RANGE_IDS_STATIC_LABEL + RANGE_IDS_GAP))
-            {
-                SetTextColor((HDC) wParam, RGB(0,0,0));
-                return (INT_PTR)CreateSolidBrush(RGB(255,255,255));
-            } 
-            else if (id > RANGE_IDS_STATIC_ERROR && id <= (RANGE_IDS_STATIC_ERROR + RANGE_IDS_GAP))
-            {
-                SetTextColor((HDC) wParam, RGB(128,0,0));
-                return (INT_PTR)CreateSolidBrush(RGB(192,192,192));
-            }
-            else if (id > RANGE_IDS_STATIC_HEADER && id <= (RANGE_IDS_STATIC_HEADER + RANGE_IDS_GAP)) 
-            {
-                // Can font 
-                SetTextColor((HDC) wParam, RGB(0,0,0));
-                return (INT_PTR)CreateSolidBrush(RGB(128,128,128));
-            }
-            SetTextColor((HDC) wParam, RGB(128,0,255));
-            return (INT_PTR)CreateSolidBrush(RGB(64, 64, 64));
-        }
-        break;
-        case WM_CLOSE:
-        {
-            DestroyWindow(hwnd);
-        }
-        break;
-        case WM_DESTROY:
-        {
-            PostQuitMessage(0);
-            return 0;
-        }
-        break;
-        
-        default:
-            return DefWindowProc(hwnd, msg, wParam, lParam);
-    }
-    return 0;
-}
-
+// Window API methods
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine, INT nCmdShow)
 {
     WNDCLASSEX wc;
@@ -204,6 +124,98 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
     return msg.message;
 }
 
+LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+    switch (msg)
+    {
+        case WM_CREATE:
+        {       
+            int xCount = 0, yCount = 0, row = xCount % CONTROL_POSITION_ROW_COUNT;
+            /* Static Labels */
+
+            // HWND staticLabelOne = CreateWindowW(WINDOW_CLASS_STATIC, L"Label One",
+            //     WS_VISIBLE | WS_CHILD,
+            //         CONTROL_POSITION_X_DEFAULT + ((CONTROL_WIDTH_NORMAL + CONTROL_GAP_XY) * row ), 
+            //         CONTROL_POSITION_Y_DEFAULT + ( (CONTROL_HEIGHT_NORMAL + CONTROL_GAP_XY) * yCount), 
+            //         CONTROL_WIDTH_NORMAL, CONTROL_HEIGHT_NORMAL,
+            //     hwnd, (HMENU) ID_STATIC_LABEL_ONE, NULL, NULL
+            // );
+            // ...better?
+            int a = 2, b = 5;
+            int r = a + b;
+            wchar_t resultString[256];
+            swprintf_s(resultString, L"%d", r);
+
+            WINDOW labelOne;
+            labelOne.SIZE = GetCoordinates(&xCount, &yCount, &row, CONST_DOUBLE, CONST_NORMAL, 0);
+            labelOne.id = ID_STATIC_LABEL_ONE;
+            HWND staticLabelOne = PlaceWindow(labelOne, hwnd, resultString, new wchar_t[]{L"STATIC"});
+
+            if (staticLabelOne == NULL)
+            {
+                MessageBox(NULL, L"Static Label One creation failed.", L"Error", MB_ICONEXCLAMATION);
+                exit(EXIT_FAILURE);
+            }
+        }
+        break;
+        case WM_COMMAND:
+        {
+
+        }
+        break;
+        case WM_NOTIFY:
+        {
+
+        }
+        break;
+        case WM_CTLCOLORSTATIC:
+        {
+            /*
+            If a handle to a brush is not returned, then DefWindowProc will be returned instead, overwritting 
+            the colours for static controls
+            */
+            int id = GetDlgCtrlID((HWND) lParam);
+
+            if (id > RANGE_IDS_STATIC_LABEL && id <= (RANGE_IDS_STATIC_LABEL + RANGE_IDS_GAP))
+            {
+                SetTextColor((HDC) wParam, RGB(0,0,0));
+                return (INT_PTR)CreateSolidBrush(RGB(255,255,255));
+            } 
+            else if (id > RANGE_IDS_STATIC_ERROR && id <= (RANGE_IDS_STATIC_ERROR + RANGE_IDS_GAP))
+            {
+                SetTextColor((HDC) wParam, RGB(128,0,0));
+                return (INT_PTR)CreateSolidBrush(RGB(192,192,192));
+            }
+            else if (id > RANGE_IDS_STATIC_HEADER && id <= (RANGE_IDS_STATIC_HEADER + RANGE_IDS_GAP)) 
+            {
+                // Can font 
+                SetTextColor((HDC) wParam, RGB(0,0,0));
+                return (INT_PTR)CreateSolidBrush(RGB(128,128,128));
+            }
+            SetTextColor((HDC) wParam, RGB(128,0,255));
+            return (INT_PTR)CreateSolidBrush(RGB(64, 64, 64));
+        }
+        break;
+        case WM_CLOSE:
+        {
+            DestroyWindow(hwnd);
+            return 0;
+        }
+        break;
+        case WM_DESTROY:
+        {
+            PostQuitMessage(0);
+            return 0;
+        }
+        break;
+        
+        default:
+            return DefWindowProc(hwnd, msg, wParam, lParam);
+    }
+    return 0;
+}
+
+// Support methods
 HWND PlaceWindow(WINDOW window, HWND hwnd, wchar_t name[], wchar_t className[])
 {
     return CreateWindowW(
