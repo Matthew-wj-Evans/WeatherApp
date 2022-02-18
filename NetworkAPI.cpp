@@ -22,14 +22,13 @@ class NetworkAPI {
             _lat_arg = lat;
 
             wchar_t lon[] = {*DEFAULT_LON};
-            _lon_arg = lon;
-
-            
+            _lon_arg = lon;     
         }
         // Custom URL Constructor
         NetworkAPI(const wchar_t basePath[],const wchar_t latitude[],const wchar_t longitude[],const wchar_t apiKey[])
         {}
-        wchar_t GetURL();
+// wchar_t GetURL(); 
+// Remove preceeding comment
         bool SetURL(wchar_t[], wchar_t[], wchar_t[], wchar_t[]);
     private:
         wchar_t* _base_path;
@@ -37,5 +36,11 @@ class NetworkAPI {
         wchar_t* _lon_arg;
         wchar_t* api_key_arg;
 } network;
+
+// wchar_t NetworkAPI::GetURL()
+// {
+    
+// } 
+// Remove preceeding comments
 
 #endif
