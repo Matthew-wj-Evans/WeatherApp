@@ -9,9 +9,9 @@
 				"-fdiagnostics-color=always",
 				"-g",
 				"-mwindows",
-				"${file}",
+				"${workspaceFolder}\\main.cpp",
 				"-o",
-				"${fileDirname}\\donotpush\\${fileBasenameNoExtension}.exe"
+				"${workspaceFolder}\\donotpush\\main.exe"
 			],
 			"options": {
 				"cwd": "${fileDirname}"
