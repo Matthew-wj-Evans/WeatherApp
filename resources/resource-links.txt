@@ -6,3 +6,6 @@ OpenWeather Weather API:
 
 C++ Includes:
     https://stackoverflow.com/questions/8020113/c-include-guards
+
+ASIO  C++ Library
+    https://think-async.com/Asio/
