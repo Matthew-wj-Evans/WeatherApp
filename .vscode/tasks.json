@@ -9,9 +9,11 @@
 				"-fdiagnostics-color=always",
 				"-g",
 				"-mwindows",
+				"-I", "${env:ASIO}",
 				"${workspaceFolder}\\main.cpp",
 				"-o",
-				"${workspaceFolder}\\donotpush\\main.exe"
+				"${workspaceFolder}\\donotpush\\main.exe",
+				"-lwsock32"
 			],
 			"options": {
 				"cwd": "${fileDirname}"

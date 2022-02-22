@@ -3,6 +3,8 @@
     "files.associations": {
         "xstring": "cpp",
         "system_error": "cpp",
-        "xlocale": "cpp"
+        "xlocale": "cpp",
+        "*.ipp": "cpp",
+        "string": "cpp"
     }
 }

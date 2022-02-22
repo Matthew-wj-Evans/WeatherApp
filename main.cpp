@@ -47,11 +47,19 @@
 #define ID_STATIC_HEADER_ONE 301
 #define ID_STATIC_HEADER_TWO 302
 
-#include<iostream>
-#include<string>
-#include<windows.h>
-#include<wingdi.h>
+#include <iostream>
+#include <string>
+#include <winsock2.h>
+#include <windows.h>
+#include <wingdi.h>
 #include "strsafe.h"
+
+#define ASIO_STANDALONE
+#include <asio.hpp>
+#include <asio/ts/buffer.hpp>
+#include <asio/ts/internet.hpp>
+
+
 #include "NetworkAPI.cpp"
 
 using namespace std;
