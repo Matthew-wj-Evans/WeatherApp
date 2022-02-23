@@ -56,13 +56,15 @@
 
 #define ASIO_STANDALONE
 #include <asio.hpp>
-#include <asio/ts/buffer.hpp>
+#include <asio/ts/buffer.hpp> // 
 #include <asio/ts/internet.hpp>
 
 
 #include "NetworkAPI.cpp"
 
 using namespace std;
+
+asio::error_code ec;
 
 struct WINDOW_SIZE {
     int xStart;
@@ -121,6 +123,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
         MessageBox(NULL, L"Window Creation Failed.", L"Error", MB_ICONEXCLAMATION | MB_OK);
     }
 
+    
+    asio::io_context context;
+    asio::ip::tcp::endpoint endpoint(asio::ip::make_address("93.184.216.34", ec), 80);
+    asio::ip::tcp::socket socket(context);
+    socket.connect(endpoint, ec);
+
     ShowWindow(hwnd, nCmdShow);
     UpdateWindow(hwnd);
 
@@ -151,18 +159,20 @@ LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
             // ...better?
             int a = 2, b = 5;
             int r = a + b;
-            wchar_t resultString[256];
-            swprintf_s(resultString, L"%d", r);
+            wchar_t resultString;
+            
+
+            
 
             WINDOW labelOne;
             labelOne.SIZE = GetCoordinates(&xCount, &yCount, &row, CONST_DOUBLE, CONST_NORMAL, 0);
             labelOne.id = ID_STATIC_LABEL_ONE;
-            HWND staticLabelOne = PlaceWindow(labelOne, hwnd, resultString, new wchar_t[]{L"STATIC"});
-
-            if (staticLabelOne == NULL)
-            {
-                MessageBox(NULL, L"Static Label One creation failed.", L"Error", MB_ICONEXCLAMATION);
-                exit(EXIT_FAILURE);
+            
+            
+            if (!ec) {
+                HWND staticLabelOne = PlaceWindow(labelOne, hwnd, new wchar_t[]{L"Connected!"}, new wchar_t[]{L"STATIC"});
+            } else {
+                HWND staticLabelOne = PlaceWindow(labelOne, hwnd, new wchar_t[]{L"Failed!"}, new wchar_t[]{L"STATIC"});
             }
         }
         break;
