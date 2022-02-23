@@ -58,7 +58,7 @@
 
 #define ASIO_STANDALONE
 #include <asio.hpp>
-#include <asio/ts/buffer.hpp> // 
+#include <asio/ts/buffer.hpp>
 #include <asio/ts/internet.hpp>
 
 
@@ -135,10 +135,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
 
     if (socket.is_open())
     {
-        std::string host_name = "GET /data/2.5/weather?lat=37.39&lon=-122.08&appid=" + GetApiKey() +  " HTTP/1.1\r\n"
+        std::string requestString = "GET /data/2.5/weather?lat=37.39&lon=-122.08&appid=" + GetApiKey() +  " HTTP/1.1\r\n"
                                 "Host: api.openweathermap.org\r\n"
-                                "Connection: keep-alive\r\n\r\n";
-        socket.write_some(asio::buffer(host_name.data(), host_name.size()), ec);
+                                "Connection: close\r\n\r\n";
+        socket.write_some(asio::buffer(requestString.data(), requestString.size()), ec);
 
         using namespace std::chrono_literals;
         std::this_thread::sleep_for(2000ms);
