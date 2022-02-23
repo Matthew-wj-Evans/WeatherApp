@@ -47,6 +47,8 @@
 #define ID_STATIC_HEADER_ONE 301
 #define ID_STATIC_HEADER_TWO 302
 
+#include <chrono>
+#include <fstream>
 #include <iostream>
 #include <string>
 #include <winsock2.h>
@@ -63,8 +65,6 @@
 #include "NetworkAPI.cpp"
 
 using namespace std;
-
-asio::error_code ec;
 
 struct WINDOW_SIZE {
     int xStart;
@@ -85,6 +85,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
 // Support function headers
 HWND PlaceWindow(WINDOW window, HWND hwnd, wchar_t* name, wchar_t* className);
 WINDOW_SIZE GetCoordinates(int* xCount, int* yCount, int* row, int widthSpan = 1, int heightSpan = 1, bool isRowEnd = 1);
+std::string GetApiKey();
+
+// Global variables
+asio::error_code ec;
+asio::io_context context;
 
 // Window API methods
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine, INT nCmdShow)
@@ -124,10 +129,34 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
     }
 
     
-    asio::io_context context;
-    asio::ip::tcp::endpoint endpoint(asio::ip::make_address("93.184.216.34", ec), 80);
+    asio::ip::tcp::endpoint endpoint(asio::ip::make_address("37.139.20.5", ec), 80);
     asio::ip::tcp::socket socket(context);
     socket.connect(endpoint, ec);
+
+    if (socket.is_open())
+    {
+        std::string host_name = "GET /data/2.5/weather?lat=37.39&lon=-122.08&appid=" + GetApiKey() +  " HTTP/1.1\r\n"
+                                "Host: api.openweathermap.org\r\n"
+                                "Connection: keep-alive\r\n\r\n";
+        socket.write_some(asio::buffer(host_name.data(), host_name.size()), ec);
+
+        using namespace std::chrono_literals;
+        std::this_thread::sleep_for(2000ms);
+
+        size_t bytes = socket.available();
+
+        if (bytes > 0)
+        {
+            std::vector<char> vBuffer(bytes);
+            socket.read_some(asio::buffer(vBuffer.data(), vBuffer.size()), ec);
+
+            const size_t cSize = strlen(vBuffer.data()) + 1;
+            wchar_t* wcConverted = new wchar_t[cSize];
+            mbstowcs(wcConverted, vBuffer.data(), cSize);
+
+            MessageBox(NULL, wcConverted, L"Weather API data", MB_OK);
+        }
+    }
 
     ShowWindow(hwnd, nCmdShow);
     UpdateWindow(hwnd);
@@ -161,13 +190,9 @@ LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
             int r = a + b;
             wchar_t resultString;
             
-
-            
-
             WINDOW labelOne;
             labelOne.SIZE = GetCoordinates(&xCount, &yCount, &row, CONST_DOUBLE, CONST_NORMAL, 0);
             labelOne.id = ID_STATIC_LABEL_ONE;
-            
             
             if (!ec) {
                 HWND staticLabelOne = PlaceWindow(labelOne, hwnd, new wchar_t[]{L"Connected!"}, new wchar_t[]{L"STATIC"});
@@ -282,4 +307,19 @@ WINDOW_SIZE GetCoordinates(int* xCount, int* yCount, int* row, int widthSpan, in
     windowSizing.height = controlHeight;
 
     return windowSizing;
+}
+
+std::string GetApiKey()
+{
+    std::string keyString;
+    std::ifstream keyFile;
+    keyFile.open("./donotpush/apikey.txt");
+
+    if (keyFile.is_open())
+    {
+        keyFile >> keyString;
+    }
+    keyFile.close();
+
+    return keyString;
 }
