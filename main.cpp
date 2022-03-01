@@ -2,51 +2,6 @@
 #define UNICODE
 #endif
 
-#define BUFFER_WEATHER_API 2048
-
-#define CONST_NORMAL 1
-#define CONST_DOUBLE 2
-#define CONST_TRIPLE 3
-
-#define WINDOW_CLASS_STATIC L"STATIC"
-#define WINDOW_CLASS_EDIT L"EDIT"
-
-#define WIN_TYPE_LABEL 0
-#define WIN_TYPE_ERROR 1
-#define WIN_TYPE_HEADER 2
-#define WIN_TYPE_EDIT 3
-
-#define MAIN_WINDOW_WIDTH 500
-#define MAIN_WINDOW_HEIGHT 600 
-
-#define CONTROL_POSITION_ROW_COUNT 3
-#define CONTROL_POSITION_X_DEFAULT 50
-#define CONTROL_POSITION_Y_DEFAULT 50
-#define CONTROL_GAP_XY 5
-
-#define CONTROL_WIDTH_NORMAL 100
-#define CONTROL_WIDTH_DOUBLE (CONTROL_WIDTH_NORMAL * 2) + CONTROL_GAP_XY
-#define CONTROL_WIDTH_TRIPLE (CONTROL_WIDTH_NORMAL * 3) + CONTROL_GAP_XY 
-
-#define CONTROL_HEIGHT_NORMAL 20
-#define CONTROL_HEIGHT_DOUBLE (CONTROL_HEIGHT_NORMAL * 2) + CONTROL_GAP_XY
-#define CONTROL_HEIGHT_TRIPLE (CONTROL_HEIGHT_NORMAL * 3) + CONTROL_GAP_XY
-
-// META Id Info
-#define RANGE_IDS_GAP 99
-#define RANGE_IDS_STATIC_LABEL 100
-#define RANGE_IDS_STATIC_ERROR 200
-#define RANGE_IDS_STATIC_HEADER 300
-#define RANGE_IDS_EDIT 400
-#define RANGE_IDS_BUTTON 500
-// Control Ids
-#define ID_STATIC_LABEL_ONE 101
-#define ID_STATIC_LABEL_TWO 102
-#define ID_STATIC_ERROR_ONE 201
-#define ID_STATIC_ERROR_TWO 202
-#define ID_STATIC_HEADER_ONE 301
-#define ID_STATIC_HEADER_TWO 302
-
 #include <chrono>
 #include <fstream>
 #include <iostream>
@@ -63,6 +18,10 @@
 
 
 #include "NetworkAPI.cpp"
+#include "ProjectConstants.cpp"
+#include "./Response.cpp"
+#include "./poco/Weather.hpp"
+
 
 using namespace std;
 
@@ -86,6 +45,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
 HWND PlaceWindow(WINDOW window, HWND hwnd, wchar_t* name, wchar_t* className);
 WINDOW_SIZE GetCoordinates(int* xCount, int* yCount, int* row, int widthSpan = 1, int heightSpan = 1, bool isRowEnd = 1);
 std::string GetApiKey();
+bool PrintJsonToFile(std::string JsonResponse);
+bool ParseJsonToWeatherObject(vector<char> jsonResponseString);
 
 // Global variables
 asio::error_code ec;
@@ -128,7 +89,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
         MessageBox(NULL, L"Window Creation Failed.", L"Error", MB_ICONEXCLAMATION | MB_OK);
     }
 
-    
+    // BAD NETWORKING CODE
     asio::ip::tcp::endpoint endpoint(asio::ip::make_address("37.139.20.5", ec), 80);
     asio::ip::tcp::socket socket(context);
     socket.connect(endpoint, ec);
@@ -140,6 +101,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
                                 "Connection: close\r\n\r\n";
         socket.write_some(asio::buffer(requestString.data(), requestString.size()), ec);
 
+        // Super duper bad
         using namespace std::chrono_literals;
         std::this_thread::sleep_for(2000ms);
 
@@ -155,8 +117,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
             mbstowcs(wcConverted, vBuffer.data(), cSize);
 
             MessageBox(NULL, wcConverted, L"Weather API data", MB_OK);
+            if ( PrintJsonToFile(vBuffer.data()) ) {
+                MessageBox(NULL, L"Json output success", L"Json to File outcome", MB_OK);
+            }
+            ParseJsonToWeatherObject(vBuffer);
         }
     }
+    // END BAD NETWORKING CODE
 
     ShowWindow(hwnd, nCmdShow);
     UpdateWindow(hwnd);
@@ -219,7 +186,7 @@ LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
             */
             int id = GetDlgCtrlID((HWND) lParam);
 
-            if (id > RANGE_IDS_STATIC_LABEL && id <= (RANGE_IDS_STATIC_LABEL + RANGE_IDS_GAP))
+            if ( id > RANGE_IDS_STATIC_LABEL && id <= (RANGE_IDS_STATIC_LABEL + RANGE_IDS_GAP))
             {
                 SetTextColor((HDC) wParam, RGB(0,0,0));
                 return (INT_PTR)CreateSolidBrush(RGB(255,255,255));
@@ -283,7 +250,7 @@ WINDOW_SIZE GetCoordinates(int* xCount, int* yCount, int* row, int widthSpan, in
 
     
     // If widthSpan == 1 -> Normal; Else/If heightSpan == 2 -> Double; Else heightspan == 3 -> Triple
-    int controlWidth = (widthSpan == CONST_NORMAL) ? CONTROL_WIDTH_NORMAL :
+    int controlWidth = (widthSpan == CONST_NORMAL ) ? CONTROL_WIDTH_NORMAL :
         (widthSpan == CONST_DOUBLE) ? CONTROL_WIDTH_DOUBLE : CONTROL_HEIGHT_TRIPLE;
 
     // If heightSpan == 1 -> Normal; Else/If heightSpan == 2 -> Double; Else heightspan == 3 -> Triple
@@ -311,9 +278,10 @@ WINDOW_SIZE GetCoordinates(int* xCount, int* yCount, int* row, int widthSpan, in
 
 std::string GetApiKey()
 {
+    std::string filePath = "./donotpush/apikey.txt";
     std::string keyString;
     std::ifstream keyFile;
-    keyFile.open("./donotpush/apikey.txt");
+    keyFile.open(filePath);
 
     if (keyFile.is_open())
     {
@@ -322,4 +290,62 @@ std::string GetApiKey()
     keyFile.close();
 
     return keyString;
+}
+
+bool PrintJsonToFile(std::string JsonResponse)
+{
+    std::string JsonOutputfilePath = "./donotpush/jsonoutput.txt";
+    std::ofstream file;
+    file.open(JsonOutputfilePath);
+    bool operationResult = false;
+
+    if (!file.is_open()) {
+        std::cerr << "Could not open file" << endl;
+    } else {
+        file << JsonResponse << endl;
+        operationResult = true;
+    }
+
+    return operationResult;
+}
+
+/*
+    JSON Parsing
+ */
+bool ParseJsonToWeatherObject(vector<char> jsonResponseChar) {
+    
+    char OpeningBraceChar = '{';
+    char ClosingBraceChar = '}';
+    char DelineatorChar = ',';
+    char QuotationChar =  '\"';
+
+
+    bool validResponse = false;
+    for (int index = 0; index < jsonResponseChar.size(); index++) {
+        if (jsonResponseChar[index] != OpeningBraceChar) {
+            // We're in the header
+            if (index == 0) {            
+                
+            /*const size_t cSize = strlen(vBuffer.data()) + 1;
+            wchar_t* wcConverted = new wchar_t[cSize];
+            mbstowcs(wcConverted, vBuffer.data(), cSize);*/
+
+                //MessageBox(NULL, wserrorMessage.data(), L"Response Error", MB_OK);
+                Response response = GetResponseObject(jsonResponseChar);
+                const size_t cSize = strlen(response.statusMessage.data()) + 1;
+                wchar_t* wcConverted = new wchar_t[cSize];
+                mbstowcs(wcConverted, response.statusMessage.data(), cSize);
+
+
+                MessageBox(NULL, wcConverted, L"Response Error", MB_OK);
+            }
+        } else {
+
+        }
+    }
+    return false;
+}
+
+int GetEndOfLineIndex() {
+    return -1;
 }
