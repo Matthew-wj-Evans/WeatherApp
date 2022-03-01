@@ -25,7 +25,6 @@ Response GetResponseObject(vector<char> response) {
         line[index] = response[lineStartIndex + index];
     }
     SetStatus(&responseObj, line, lineStartIndex, lineEndIndex);
-    responseObj.statusMessage = line;
     return responseObj;
 }
 
@@ -46,10 +45,34 @@ void SetStatus(Response* response, char* line, int beginning, int end) {
     // Example : HTTP/1.1 200 Ok
     int indexOffset = beginning + HEADER_STATUS_SIZE + 2; // + 2 to force the index to a non-space character
     // Get the error code length
-    int index = indexOffset;
     int errorCodeLength = 0;
     int statusMessageLength = 0;
 
+    // Get the length until the next space char
+    for (int index = indexOffset; line[index] != ' '; index++ ) {
+        errorCodeLength++;
+    }
 
+    int errorCode = 0;
+
+    for (int index = 0; index <  errorCodeLength; index++) {
+        //errorCode[index] = line[index + indexOffset];
+    }
+
+    indexOffset += errorCodeLength; // +1 to push index to non-space char
+
+    // Remaining line is the status code.
+    for (int index = indexOffset; line[index] != '\n'; index++) {
+        statusMessageLength++;
+    }
+
+    char statusMessage[statusMessageLength] = {0};
+
+    for (int index = 0; index < statusMessageLength; index++) {
+        statusMessage[index] = line[index + indexOffset];
+    }
+
+    //response->statusCode = (long)errorCode;
+    response->statusMessage = (statusMessage);
 }
 #endif

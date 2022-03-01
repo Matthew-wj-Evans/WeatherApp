@@ -332,12 +332,16 @@ bool ParseJsonToWeatherObject(vector<char> jsonResponseChar) {
 
                 //MessageBox(NULL, wserrorMessage.data(), L"Response Error", MB_OK);
                 Response response = GetResponseObject(jsonResponseChar);
-                const size_t cSize = strlen(response.statusMessage.data()) + 1;
-                wchar_t* wcConverted = new wchar_t[cSize];
-                mbstowcs(wcConverted, response.statusMessage.data(), cSize);
-
-
-                MessageBox(NULL, wcConverted, L"Response Error", MB_OK);
+                
+                const size_t cMessageSize = strlen(response.statusMessage.data()) + 1;
+                wchar_t* wcConvertedMessage = new wchar_t[cMessageSize];
+                mbstowcs(wcConvertedMessage, response.statusMessage.data(), cMessageSize);
+                MessageBox(NULL, wcConvertedMessage, L"Status", MB_OK);
+                
+                // const size_t cCodeSize = strlen(response.statusCode) + 1;
+                // wchar_t* wcConvertedCode = new wchar_t[cCodeSize];
+                // mbstowcs(wcConvertedCode, response.statusCode, cCodeSize);
+                // MessageBox(NULL, wcConvertedCode, L"Status", MB_OK);
             }
         } else {
 
