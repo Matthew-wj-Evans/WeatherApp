@@ -117,9 +117,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
             mbstowcs(wcConverted, vBuffer.data(), cSize);
 
             MessageBox(NULL, wcConverted, L"Weather API data", MB_OK);
-            if ( PrintJsonToFile(vBuffer.data()) ) {
-                MessageBox(NULL, L"Json output success", L"Json to File outcome", MB_OK);
-            }
             ParseJsonToWeatherObject(vBuffer);
         }
     }
@@ -305,7 +302,7 @@ bool PrintJsonToFile(std::string JsonResponse)
         file << JsonResponse << endl;
         operationResult = true;
     }
-
+    file.close();
     return operationResult;
 }
 
@@ -318,34 +315,16 @@ bool ParseJsonToWeatherObject(vector<char> jsonResponseChar) {
     char ClosingBraceChar = '}';
     char DelineatorChar = ',';
     char QuotationChar =  '\"';
+    
+    Response response = GetResponseObject(jsonResponseChar);
+    // We're in the header
+    if (response.statusCode == RESPONSE_OK_CODE) {
+        std::wstring wStatusMessage = wstring(L"Error code: ") + to_wstring(response.statusCode);
+        MessageBox(NULL, wStatusMessage.data(), L"Response 200", MB_OK);
 
-
-    bool validResponse = false;
-    for (int index = 0; index < jsonResponseChar.size(); index++) {
-        if (jsonResponseChar[index] != OpeningBraceChar) {
-            // We're in the header
-            if (index == 0) {            
-                
-            /*const size_t cSize = strlen(vBuffer.data()) + 1;
-            wchar_t* wcConverted = new wchar_t[cSize];
-            mbstowcs(wcConverted, vBuffer.data(), cSize);*/
-
-                //MessageBox(NULL, wserrorMessage.data(), L"Response Error", MB_OK);
-                Response response = GetResponseObject(jsonResponseChar);
-                
-                const size_t cMessageSize = strlen(response.statusMessage.data()) + 1;
-                wchar_t* wcConvertedMessage = new wchar_t[cMessageSize];
-                mbstowcs(wcConvertedMessage, response.statusMessage.data(), cMessageSize);
-                MessageBox(NULL, wcConvertedMessage, L"Status", MB_OK);
-                
-                // const size_t cCodeSize = strlen(response.statusCode) + 1;
-                // wchar_t* wcConvertedCode = new wchar_t[cCodeSize];
-                // mbstowcs(wcConvertedCode, response.statusCode, cCodeSize);
-                // MessageBox(NULL, wcConvertedCode, L"Status", MB_OK);
-            }
-        } else {
-
-        }
+    } else {
+        std::wstring wStatusMessage = L"Error code: " + response.statusMessage;
+        MessageBox(NULL, wStatusMessage.data(), L"Response Error", MB_OK);
     }
     return false;
 }

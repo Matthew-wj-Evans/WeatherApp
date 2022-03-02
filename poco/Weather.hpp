@@ -12,9 +12,9 @@ class Coordinates {
 class Details {
     public:
         int id;
-        string main;
-        string description;
-        string icon;
+        std::string main;
+        std::string description;
+        std::string icon;
 };
 
 class MainWeather {
@@ -37,7 +37,7 @@ class System {
     public:
         int type;
         int id;
-        string country;
+        std::string country;
         int sunrise;
         int sunset;
 };

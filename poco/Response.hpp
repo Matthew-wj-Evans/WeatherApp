@@ -2,6 +2,7 @@ class Response {
     public: 
         int statusCode;
         int contentLength;
-        std::string statusMessage;
-        std::string JSON;       
+        std::wstring statusMessage;
+        std::wstring JSON;
+        std::wstring testing;
 };

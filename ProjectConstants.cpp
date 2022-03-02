@@ -39,4 +39,7 @@
 #define ID_STATIC_HEADER_ONE 301
 #define ID_STATIC_HEADER_TWO 302
 
+#define RESPONSE_OK "Ok"
+#define RESPONSE_OK_CODE 200
+
 #endif
