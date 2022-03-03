@@ -116,7 +116,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
             wchar_t* wcConverted = new wchar_t[cSize];
             mbstowcs(wcConverted, vBuffer.data(), cSize);
 
-            MessageBox(NULL, wcConverted, L"Weather API data", MB_OK);
+            //MessageBox(NULL, wcConverted, L"Weather API data", MB_OK);
             ParseJsonToWeatherObject(vBuffer);
         }
     }
@@ -318,14 +318,14 @@ bool ParseJsonToWeatherObject(vector<char> jsonResponseChar) {
     
     Response response = GetResponseObject(jsonResponseChar);
     // We're in the header
-    if (response.statusCode == RESPONSE_OK_CODE) {
-        std::wstring wStatusMessage = wstring(L"Error code: ") + to_wstring(response.statusCode);
-        MessageBox(NULL, wStatusMessage.data(), L"Response 200", MB_OK);
+    // if (response.statusCode == RESPONSE_OK_CODE) {
+    //     //std::wstring wStatusMessage = wstring(L"Error code: ") + to_wstring(response.statusCode);
+    //     //MessageBox(NULL, wStatusMessage.data(), L"Response 200", MB_OK);
 
-    } else {
-        std::wstring wStatusMessage = L"Error code: " + response.statusMessage;
-        MessageBox(NULL, wStatusMessage.data(), L"Response Error", MB_OK);
-    }
+    // } else {
+    //     std::wstring wStatusMessage = L"Error code: " + response.statusMessage;
+    //     MessageBox(NULL, wStatusMessage.data(), L"Response Error", MB_OK);
+    // }
     return false;
 }
 

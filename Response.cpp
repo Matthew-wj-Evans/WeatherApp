@@ -4,7 +4,21 @@
 #define HEADER_STATUS_STRING "HTTP/1.1"
 #define HEADER_STATUS_SIZE 8
 #define HEADER_LENGTH_STRING "Content-Length"
-#define HEADER_LENGTH_SIZE 14
+#define HEADER_LENGTH_SIZE 14 
+#define HEADER_LINES_COUNT 11
+
+#define HEADER_HTTP_STATUS 0
+#define HEADER_SERVER 1
+#define HEADER_DATE 2
+#define HEADER_CONTENT_TYPE 3
+#define HEADER_CONTENT_LENGTH 4
+#define HEADER_CONNECTION 5
+#define HEADER_CACHE_KEY 6
+#define HEADER_ACCESS_ALLOW_ORIGIN 7
+#define HEADER_ACCESS_ALLOW_CREDENTIALS 8
+#define HEADER_ACCESS_ALLOW_METHODS 9
+#define HEADER_JSON_DATA 10
+
 
 #include "./poco/Weather.hpp"
 #include "./poco/Response.hpp"
@@ -14,33 +28,41 @@
 #include <string>
 using namespace std;
 
-int GetEndOfLineIndexOffset(std::vector<char> response, int indexStart);
+vector<std::wstring> ProccessResponseToWsVector(vector<char> response, int* jsonStart);
+int GetEndOfCurrentLineIndex(std::vector<char> response, int indexStart);
 Response GetResponseObject(std::vector<char> response);
 vector<char> GetLine(int lineStartIndex, int lineEndIndex, vector<char> response);
-void SetStatus(Response* response, vector<char> line);
-void SetTesting(Response* response, vector<char> line);
+
+void SetStatus(Response* response, std::wstring);
+void SetTesting(Response* response, std::wstring);
+bool SetContentLength(Response* response, std::wstring);
+void SetJSON(Response* response, std::wstring);
 
 bool PrintToFile(Response response, string fileName);
 bool PrintToFile(vector<char> response, string fileName);
 bool PrintToFile(int response, string fileName);
+bool PrintToFile(wchar_t* line, string fileName);
+
 
 Response GetResponseObject(vector<char> response) 
 {
-    PrintToFile(response, "response_dump_output");
     Response responseObj;
     int lineStartIndex = 0;
-    int lineEndIndex = GetEndOfLineIndexOffset(response, lineStartIndex);
-    
-    // First header line; HTTTP/1.1 ...
-    vector<char>line = GetLine(lineStartIndex, lineEndIndex, response);
-    SetStatus(&responseObj, line);
-    
-    // Second Header Line; Server: ...
-    lineStartIndex = lineEndIndex + 2; // move to the next line
-    lineEndIndex = GetEndOfLineIndexOffset(response, lineStartIndex);
-    line = GetLine(lineStartIndex, lineEndIndex, response);
-    SetTesting(&responseObj, line);
+    int lineEndIndex = GetEndOfCurrentLineIndex(response, lineStartIndex);
+    int jsonStart = -1;
+    bool validLine = false;
 
+    // Break the vector<char> into a two dimentional vector of wstrings for easier manipulation
+    vector<std::wstring> headerLines = ProccessResponseToWsVector(response, &jsonStart);
+    
+    if (jsonStart == -1) {
+        PrintToFile(new wchar_t[]{L"Error, jsonStart has not been set"}, "error_dump");    
+    } else {
+      SetStatus(&responseObj, headerLines.at(HEADER_HTTP_STATUS));
+      SetTesting(&responseObj, headerLines.at(HEADER_CONTENT_LENGTH));
+    }
+
+    PrintToFile(response, "response_dump_output");
     PrintToFile(responseObj, "response_obj_output");
     return responseObj;
 }
@@ -48,15 +70,15 @@ Response GetResponseObject(vector<char> response)
 /*
     Returns the index offset from the start position to the current end of line character.
 */
-int GetEndOfLineIndexOffset(vector<char> response, int indexStart) 
+int GetEndOfCurrentLineIndex(vector<char> response, int indexStart) 
 {
     int index = indexStart;
     do {
         index++;
-    } while (response.at(index) != '\n');
+    } while (response.at(index) != '\r');
     
-    return index - indexStart;
-}
+    return index;
+}   
 
 vector<char> GetLine(int lineStartIndex, int lineEndIndex, vector<char> response) 
 {
@@ -69,7 +91,39 @@ vector<char> GetLine(int lineStartIndex, int lineEndIndex, vector<char> response
     return line;
 }
 
-void SetStatus(Response* response, vector<char> line) 
+/*
+Takes the vector<char> of the entire response and offloads
+into a vector<std::wstring> for easier manipulation.
+*/
+vector<std::wstring> ProccessResponseToWsVector(vector<char> response, int* jsonStart)
+{
+    vector<std::wstring> header(HEADER_LINES_COUNT);
+    int lineStartIndex = 0;
+    int lineEndIndex = GetEndOfCurrentLineIndex(response, lineStartIndex);
+
+    // Don't want to handle iterating throught the JSON characters in this for-loop as I don't have the content length yet
+    //  hence offsetting the loop-condition by one.
+    for (int headerIndex = 0; headerIndex < HEADER_LINES_COUNT - 1; headerIndex++)
+    {
+        std::wstring line = L"";
+        for (int index = lineStartIndex; index <= lineEndIndex; index++)
+        {
+            line += response.at(index);
+        }
+        header.at(headerIndex) = line;
+        if (headerIndex != 9)
+        {
+            lineStartIndex = lineEndIndex + 2; // Skip past the two /r and one /n characters
+            lineEndIndex = GetEndOfCurrentLineIndex(response, lineStartIndex);
+        }
+    }
+    *jsonStart = lineEndIndex + 4;
+
+
+    return header;
+}
+
+void SetStatus(Response* response, std::wstring line) 
 {
     // Example : HTTP/1.1 200 Ok
     int indexOffset = HEADER_STATUS_SIZE + 1; // + 2 to force the index to a non-space character
@@ -108,22 +162,34 @@ void SetStatus(Response* response, vector<char> line)
     response->statusMessage = wide;
 }
 
-void SetTesting(Response* response, vector<char> line)
+void SetTesting(Response* response, std::wstring line)
 {
     response->testing = wstring(line.begin(), line.end());
 }
 
+bool SetContentLength(Response* response, std::wstring)
+{
+
+}
+
+void SetJSON(Response* response, std::wstring)
+{
+
+}
+
 bool PrintToFile(Response response, string fileName)
 {
-    string OutputfilePath = "./donotpush/" + fileName + ".txt";
-    ofstream file;
+    
+    string OutputfilePath = "./debug/" + fileName + ".txt";
+    /* Response object strings are wstring, std::wofstream is needed else hex is output */
+    std::wofstream file;
     file.open(OutputfilePath);
     bool operationResult = false;
 
     if (!file.is_open()) {
         cerr << "Could not open file" << endl;
     } else {
-        file << response.statusCode << "\n" << response.statusMessage.c_str() << "\n" <<  response.testing.data() << endl;
+        file << response.statusCode << ',' << response.statusMessage.data() << ',' <<  response.testing.data() << ',' << "Final Output line" << endl;
         operationResult = true;
     }
     file.close();
@@ -132,7 +198,7 @@ bool PrintToFile(Response response, string fileName)
 
 bool PrintToFile(vector<char> response, string fileName)
 {
-    string OutputfilePath = "./donotpush/" + fileName + ".txt";
+    string OutputfilePath = "./debug/" + fileName + ".txt";
     ofstream file;
     file.open(OutputfilePath);
     bool operationResult = false;
@@ -140,7 +206,7 @@ bool PrintToFile(vector<char> response, string fileName)
     if (!file.is_open()) {
         cerr << "Could not open file" << endl;
     } else {
-        file << response.data() << endl;
+        file << response.data();
         operationResult = true;
     }
     file.close();
@@ -149,7 +215,7 @@ bool PrintToFile(vector<char> response, string fileName)
 
 bool PrintToFile(int response, string fileName)
 {
-    string OutputfilePath = "./donotpush/" + fileName + ".txt";
+    string OutputfilePath = "./debug/" + fileName + ".txt";
     ofstream file;
     file.open(OutputfilePath);
     bool operationResult = false;
@@ -158,6 +224,23 @@ bool PrintToFile(int response, string fileName)
         cerr << "Could not open file" << endl;
     } else {
         file << response << endl;
+        operationResult = true;
+    }
+    file.close();
+    return operationResult;
+}
+
+bool PrintToFile(wchar_t* line, string fileName)
+{
+    string OutputfilePath = "./debug/" + fileName + ".txt";
+    std::wofstream file;
+    file.open(OutputfilePath);
+    bool operationResult = false;
+
+    if (!file.is_open()) {
+        cerr << "Could not open file" << endl;
+    } else {
+        file << line;
         operationResult = true;
     }
     file.close();
