@@ -3,7 +3,7 @@
 
 #define HEADER_STATUS_STRING "HTTP/1.1"
 #define HEADER_STATUS_SIZE 8
-#define HEADER_LENGTH_STRING "Content-Length"
+#define HEADER_LENGTH_STRING "Content-Length: "
 #define HEADER_LENGTH_SIZE 14 
 #define HEADER_LINES_COUNT 11
 
@@ -19,6 +19,7 @@
 #define HEADER_ACCESS_ALLOW_METHODS 9
 #define HEADER_JSON_DATA 10
 
+#define DEBUG_FILE_RESPONSE "./debug/response/"
 
 #include "./poco/Weather.hpp"
 #include "./poco/Response.hpp"
@@ -35,14 +36,14 @@ vector<char> GetLine(int lineStartIndex, int lineEndIndex, vector<char> response
 
 void SetStatus(Response* response, std::wstring);
 void SetTesting(Response* response, std::wstring);
-bool SetContentLength(Response* response, std::wstring);
-void SetJSON(Response* response, std::wstring);
+int SetContentLength(Response* response, std::wstring);
+void SetJSON(Response* responseObj, std::vector<char> response);
 
 bool PrintToFile(Response response, string fileName);
 bool PrintToFile(vector<char> response, string fileName);
 bool PrintToFile(int response, string fileName);
 bool PrintToFile(wchar_t* line, string fileName);
-
+void PrintToFile(std::vector<std::wstring> content, string fileName);
 
 Response GetResponseObject(vector<char> response) 
 {
@@ -54,14 +55,20 @@ Response GetResponseObject(vector<char> response)
 
     // Break the vector<char> into a two dimentional vector of wstrings for easier manipulation
     vector<std::wstring> headerLines = ProccessResponseToWsVector(response, &jsonStart);
-    
+    responseObj.jsonStart = jsonStart;
+
     if (jsonStart == -1) {
         PrintToFile(new wchar_t[]{L"Error, jsonStart has not been set"}, "error_dump");    
     } else {
       SetStatus(&responseObj, headerLines.at(HEADER_HTTP_STATUS));
-      SetTesting(&responseObj, headerLines.at(HEADER_CONTENT_LENGTH));
+      if (SetContentLength(&responseObj, headerLines.at(HEADER_CONTENT_LENGTH)) > 0) {
+          SetJSON(&responseObj, response);
+      } else {
+        // Returned no content.
+        responseObj.contentLength = -1;   
+      }
     }
-
+    PrintToFile(headerLines, "header_lines_vec");
     PrintToFile(response, "response_dump_output");
     PrintToFile(responseObj, "response_obj_output");
     return responseObj;
@@ -118,8 +125,6 @@ vector<std::wstring> ProccessResponseToWsVector(vector<char> response, int* json
         }
     }
     *jsonStart = lineEndIndex + 4;
-
-
     return header;
 }
 
@@ -167,20 +172,45 @@ void SetTesting(Response* response, std::wstring line)
     response->testing = wstring(line.begin(), line.end());
 }
 
-bool SetContentLength(Response* response, std::wstring)
+int SetContentLength(Response* response, std::wstring contentHeader)
 {
-
+    int contentLength = -1;
+    int index = strlen(HEADER_LENGTH_STRING);
+    int contentLengthSize = 0;
+    for (int headerIndex = index; headerIndex < contentHeader.length(); headerIndex++)
+    {
+        contentLengthSize++;
+    }
+    std::vector<char> cLength(contentLengthSize);
+    for (int cLengthIndex = 0; cLengthIndex < contentLengthSize; cLengthIndex++)
+    {
+        cLength.at(cLengthIndex) = contentHeader.at(cLengthIndex + index);
+    }
+    contentLength = atoi(cLength.data());
+    PrintToFile(contentLength, "content_len");
+    response->contentLength = contentLength;
+    return contentLength;
 }
 
-void SetJSON(Response* response, std::wstring)
+void SetJSON(Response* responseObj, std::vector<char> response)
 {
+    int jsonStart = responseObj->jsonStart;
+    int jsonSize = responseObj->contentLength;
+    std::vector<char> json(jsonSize);
 
+    for (int index = 0; index < jsonSize; index++)
+    {
+        json.at(index) = response.at(index + jsonStart);
+    }
+    responseObj->JSON.assign(json.begin(), json.begin() + json.size());
 }
 
+
+// Debugging methods
 bool PrintToFile(Response response, string fileName)
 {
     
-    string OutputfilePath = "./debug/" + fileName + ".txt";
+    string OutputfilePath = DEBUG_FILE_RESPONSE + fileName + ".txt";
     /* Response object strings are wstring, std::wofstream is needed else hex is output */
     std::wofstream file;
     file.open(OutputfilePath);
@@ -189,7 +219,11 @@ bool PrintToFile(Response response, string fileName)
     if (!file.is_open()) {
         cerr << "Could not open file" << endl;
     } else {
-        file << response.statusCode << ',' << response.statusMessage.data() << ',' <<  response.testing.data() << ',' << "Final Output line" << endl;
+        file << response.statusCode << ',' << response.statusMessage << ',' << response.jsonStart << ',' <<  response.contentLength << '\n';
+        for (int index = 0; index < response.JSON.size(); index++) {
+            file << response.JSON.at(index);
+        }
+
         operationResult = true;
     }
     file.close();
@@ -198,7 +232,7 @@ bool PrintToFile(Response response, string fileName)
 
 bool PrintToFile(vector<char> response, string fileName)
 {
-    string OutputfilePath = "./debug/" + fileName + ".txt";
+    string OutputfilePath = DEBUG_FILE_RESPONSE + fileName + ".txt";
     ofstream file;
     file.open(OutputfilePath);
     bool operationResult = false;
@@ -215,7 +249,7 @@ bool PrintToFile(vector<char> response, string fileName)
 
 bool PrintToFile(int response, string fileName)
 {
-    string OutputfilePath = "./debug/" + fileName + ".txt";
+    string OutputfilePath = DEBUG_FILE_RESPONSE + fileName + ".txt";
     ofstream file;
     file.open(OutputfilePath);
     bool operationResult = false;
@@ -232,7 +266,7 @@ bool PrintToFile(int response, string fileName)
 
 bool PrintToFile(wchar_t* line, string fileName)
 {
-    string OutputfilePath = "./debug/" + fileName + ".txt";
+    string OutputfilePath = DEBUG_FILE_RESPONSE + fileName + ".txt";
     std::wofstream file;
     file.open(OutputfilePath);
     bool operationResult = false;
@@ -245,5 +279,22 @@ bool PrintToFile(wchar_t* line, string fileName)
     }
     file.close();
     return operationResult;
+}
+
+void PrintToFile(std::vector<std::wstring> content, string fileName)
+{
+    string OutputfilePath = "./debug/response/" + fileName + ".txt";
+    std:wofstream file;
+    file.open(OutputfilePath);
+
+    if (file.is_open())
+    {
+        for (int index = 0; index < content.size(); index++)
+        {
+            file << content.at(index);
+        }
+        file << endl;
+    }
+    file.close();
 }
 #endif
