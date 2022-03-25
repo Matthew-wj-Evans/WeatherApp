@@ -21,6 +21,7 @@
 #include "ProjectConstants.cpp"
 #include "./Response.cpp"
 #include "./poco/Weather.hpp"
+#include "JsonProcessor.cpp"
 
 
 using namespace std;
@@ -310,25 +311,7 @@ bool PrintJsonToFile(std::string JsonResponse)
     JSON Parsing
  */
 bool ParseJsonToWeatherObject(vector<char> jsonResponseChar) {
-    
-    char OpeningBraceChar = '{';
-    char ClosingBraceChar = '}';
-    char DelineatorChar = ',';
-    char QuotationChar =  '\"';
-    
     Response response = GetResponseObject(jsonResponseChar);
-    // We're in the header
-    // if (response.statusCode == RESPONSE_OK_CODE) {
-    //     //std::wstring wStatusMessage = wstring(L"Error code: ") + to_wstring(response.statusCode);
-    //     //MessageBox(NULL, wStatusMessage.data(), L"Response 200", MB_OK);
-
-    // } else {
-    //     std::wstring wStatusMessage = L"Error code: " + response.statusMessage;
-    //     MessageBox(NULL, wStatusMessage.data(), L"Response Error", MB_OK);
-    // }
+    
     return false;
-}
-
-int GetEndOfLineIndex() {
-    return -1;
 }
