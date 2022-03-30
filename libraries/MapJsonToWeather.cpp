@@ -1,6 +1,6 @@
 #ifndef MapJsonToWeather
 #define MapJsonToWeather
-#include "./poco/Weather.hpp"
+#include "./../classes/Weather.hpp"
 #include "JsonProcessor.cpp"
 #include <string>
 using namespace std;

@@ -17,12 +17,12 @@
 #include <asio/ts/internet.hpp>
 
 
-#include "NetworkAPI.cpp"
-#include "ProjectConstants.cpp"
-#include "MapJsonToWeather.cpp"
-#include "./Response.cpp"
-#include "./poco/Weather.hpp"
-#include "JsonProcessor.cpp"
+#include "./libraries/NetworkAPI.cpp"
+#include "./libraries/ProjectConstants.cpp"
+#include "./libraries/MapJsonToWeather.cpp"
+#include "./libraries/Response.cpp"
+#include "./classes/Weather.hpp"
+#include "./libraries/JsonProcessor.cpp"
 
 
 using namespace std;
@@ -313,7 +313,7 @@ bool PrintJsonToFile(std::string JsonResponse)
  */
 bool ParseJsonToWeatherObject(vector<char> jsonResponseChar) {
     Response response = GetResponseObject(jsonResponseChar);
-    
+
     Weather weatherData = MapJsonToWeather::MapWeatherObject(response.JSON);
     
     return false;

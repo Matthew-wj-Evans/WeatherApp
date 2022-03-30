@@ -21,8 +21,8 @@
 
 #define DEBUG_FILE_RESPONSE "./debug/response/"
 
-#include "./poco/Weather.hpp"
-#include "./poco/Response.hpp"
+#include "./../classes/Weather.hpp"
+#include "./../classes/Response.hpp"
 #include <vector>
 #include <locale>
 #include <codecvt>
