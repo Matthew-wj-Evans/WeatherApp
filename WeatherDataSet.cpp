@@ -1,4 +1,0 @@
-#ifndef WEATHERDATASET_CPP
-#define WEATHERDATASET_CPP
-
-#endif
