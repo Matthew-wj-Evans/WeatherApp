@@ -103,9 +103,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
                                 "Connection: close\r\n\r\n";
         socket.write_some(asio::buffer(requestString.data(), requestString.size()), ec);
 
-        // Super duper bad
-        using namespace std::chrono_literals;
-        std::this_thread::sleep_for(2000ms);
+        socket.wait(socket.wait_read);
 
         size_t bytes = socket.available();
 
