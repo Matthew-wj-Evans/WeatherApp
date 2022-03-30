@@ -4,6 +4,6 @@ class Response {
         int contentLength;
         int jsonStart;
         std::wstring statusMessage;
-        std::vector<char> JSON;
+        string JSON;
         std::wstring testing;
 };

@@ -2,7 +2,6 @@
 #define JsonProcessor
 #include <string.h>
 #include <vector>
-#include "Weather.hpp"
 using namespace std;
 
 #define QUOTE '\"'

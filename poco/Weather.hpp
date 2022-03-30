@@ -3,13 +3,13 @@
 
 using namespace std;
 
-class Coordinates {
+class Coordinate {
     public:
         float longitude;
         float latitude;
 };
 
-class Details {
+class Detail {
     public:
         int id;
         std::string main;
@@ -17,7 +17,7 @@ class Details {
         std::string icon;
 };
 
-class MainWeather {
+class Main {
     public:
         float temperature;
         float feelsLike;
@@ -31,6 +31,12 @@ class Wind {
     public:
         float speed;
         int degree;
+        float gust;
+};
+
+class Cloud {
+    public:
+        int all;
 };
 
 class System {
@@ -44,17 +50,19 @@ class System {
 
 class Weather {
     public:
-        Coordinates coordinates;
-        MainWeather weather;
+        Coordinate coordinate;
+        Detail detail;
         string base;
-        MainWeather main;
+        Main main;
         int visibility;
         Wind wind;
-        int dt;
+        Cloud clouds;
+        long dt;
         System system;
         int timezone;
         int id;
         string timezoneString;
+        string name;
         int cod;
 };
 

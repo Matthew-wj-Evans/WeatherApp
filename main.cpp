@@ -19,6 +19,7 @@
 
 #include "NetworkAPI.cpp"
 #include "ProjectConstants.cpp"
+#include "MapJsonToWeather.cpp"
 #include "./Response.cpp"
 #include "./poco/Weather.hpp"
 #include "JsonProcessor.cpp"
@@ -312,6 +313,8 @@ bool PrintJsonToFile(std::string JsonResponse)
  */
 bool ParseJsonToWeatherObject(vector<char> jsonResponseChar) {
     Response response = GetResponseObject(jsonResponseChar);
+    
+    Weather weatherData = MapJsonToWeather::MapWeatherObject(response.JSON);
     
     return false;
 }

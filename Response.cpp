@@ -197,7 +197,7 @@ void SetJSON(Response* responseObj, std::vector<char> response)
     int jsonStart = responseObj->jsonStart;
     int jsonSize = responseObj->contentLength;
     std::vector<char> json(jsonSize);
-
+    
     for (int index = 0; index < jsonSize; index++)
     {
         json.at(index) = response.at(index + jsonStart);
