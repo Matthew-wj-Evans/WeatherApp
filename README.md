@@ -1,4 +1,4 @@
 # WeatherApp
-Using Windows and OpenWeather API
+Using Windows, OpenWeather, and ASIO APIs
 
-Learning to use both as well as general C++ learning
+This is to facilitate learning C++ 
