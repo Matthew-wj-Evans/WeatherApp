@@ -16,7 +16,6 @@
 #include <asio/ts/buffer.hpp>
 #include <asio/ts/internet.hpp>
 
-
 #include "./libraries/NetworkAPI.cpp"
 #include "./libraries/ProjectConstants.cpp"
 #include "./libraries/MapJsonToWeather.cpp"
@@ -24,17 +23,20 @@
 #include "./classes/Weather.hpp"
 #include "./libraries/JsonProcessor.cpp"
 
+#define WM_WEATHER_DATA (WM_USER + 0x0001)
 
 using namespace std;
 
-struct WINDOW_SIZE {
+struct WINDOW_SIZE
+{
     int xStart;
     int yStart;
     int width;
     int height;
 };
 
-struct WINDOW {
+struct WINDOW
+{
     int id;
     WINDOW_SIZE SIZE;
 };
@@ -44,15 +46,18 @@ LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine, INT nCmdShow);
 
 // Support function headers
-HWND PlaceWindow(WINDOW window, HWND hwnd, wchar_t* name, wchar_t* className);
-WINDOW_SIZE GetCoordinates(int* xCount, int* yCount, int* row, int widthSpan = 1, int heightSpan = 1, bool isRowEnd = 1);
+HWND PlaceWindow(WINDOW window, HWND hwnd, wchar_t *name, wchar_t *className);
+WINDOW_SIZE GetCoordinates(int *xCount, int *yCount, int *row, int widthSpan = 1, int heightSpan = 1, bool isRowEnd = 1);
 std::string GetApiKey();
 bool PrintJsonToFile(std::string JsonResponse);
 bool ParseJsonToWeatherObject(vector<char> jsonResponseString);
+// Networking methods
+void GetData(asio::ip::tcp::socket &socket);
 
 // Global variables
 asio::error_code ec;
 asio::io_context context;
+Weather APIdata;
 
 // Window API methods
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine, INT nCmdShow)
@@ -81,51 +86,50 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
         exit(EXIT_FAILURE);
     }
 
-    hwnd = CreateWindowEx(WS_EX_APPWINDOW, ClassName, L"Window", 
-        WS_EX_OVERLAPPEDWINDOW | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_SYSMENU,
-        CW_USEDEFAULT, CW_USEDEFAULT, MAIN_WINDOW_WIDTH, MAIN_WINDOW_HEIGHT, 
-        NULL, NULL, hInstance, NULL);
+    hwnd = CreateWindowEx(WS_EX_APPWINDOW, ClassName, L"Window",
+                          WS_EX_OVERLAPPEDWINDOW | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_SYSMENU,
+                          CW_USEDEFAULT, CW_USEDEFAULT, MAIN_WINDOW_WIDTH, MAIN_WINDOW_HEIGHT,
+                          NULL, NULL, hInstance, NULL);
 
     if (hwnd == NULL)
     {
         MessageBox(NULL, L"Window Creation Failed.", L"Error", MB_ICONEXCLAMATION | MB_OK);
     }
 
-    // BAD NETWORKING CODE
+    // Better NETWORKING CODE, not using async as I'm not sure how to hook back into the windows API from a handler/listener
     asio::ip::tcp::endpoint endpoint(asio::ip::make_address("37.139.20.5", ec), 80);
     asio::ip::tcp::socket socket(context);
     socket.connect(endpoint, ec);
 
     if (socket.is_open())
     {
-        std::string requestString = "GET /data/2.5/weather?lat=37.39&lon=-122.08&appid=" + GetApiKey() +  " HTTP/1.1\r\n"
-                                "Host: api.openweathermap.org\r\n"
-                                "Connection: close\r\n\r\n";
+        // prime the async method?
+        std::string requestString = "GET /data/2.5/weather?lat=37.39&lon=-122.08&appid=" 
+            + GetApiKey() + " HTTP/1.1\r\n"
+            "Host: api.openweathermap.org\r\n"
+            "Connection: close\r\n\r\n";
         socket.write_some(asio::buffer(requestString.data(), requestString.size()), ec);
-
         socket.wait(socket.wait_read);
 
         size_t bytes = socket.available();
 
         if (bytes > 0)
         {
-            std::vector<char> vBuffer(bytes);
-            socket.read_some(asio::buffer(vBuffer.data(), vBuffer.size()), ec);
+            vector<char> buffer(bytes);
+            socket.read_some(asio::buffer(buffer.data(), buffer.size()), ec);
 
-            const size_t cSize = strlen(vBuffer.data()) + 1;
-            wchar_t* wcConverted = new wchar_t[cSize];
-            mbstowcs(wcConverted, vBuffer.data(), cSize);
-
-            //MessageBox(NULL, wcConverted, L"Weather API data", MB_OK);
-            ParseJsonToWeatherObject(vBuffer);
+            if (!ec)
+            {
+                ParseJsonToWeatherObject(buffer);
+            }
         }
     }
-    // END BAD NETWORKING CODE
+    // END Better NETWORKING CODE
 
     ShowWindow(hwnd, nCmdShow);
     UpdateWindow(hwnd);
 
-    while(GetMessage(&msg, NULL, 0, 0) > 0)
+    while (GetMessage(&msg, NULL, 0, 0) > 0)
     {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
@@ -137,87 +141,74 @@ LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 {
     switch (msg)
     {
-        case WM_CREATE:
-        {       
-            int xCount = 0, yCount = 0, row = xCount % CONTROL_POSITION_ROW_COUNT;
-            /* Static Labels */
+    case WM_CREATE:
+    {
+        // Should ?theoretically? have the data from WeatherAPI here
+        struct WINDOW window;
+        window.id = 0x0001;
+        window.SIZE = WINDOW_SIZE{10};
+        string toDisplay = APIdata.detail.description;
+        wstring resizedString = wstring(toDisplay.begin(), toDisplay.end());
+        const wchar_t* result = resizedString.c_str();
 
-            // HWND staticLabelOne = CreateWindowW(WINDOW_CLASS_STATIC, L"Label One",
-            //     WS_VISIBLE | WS_CHILD,
-            //         CONTROL_POSITION_X_DEFAULT + ((CONTROL_WIDTH_NORMAL + CONTROL_GAP_XY) * row ), 
-            //         CONTROL_POSITION_Y_DEFAULT + ( (CONTROL_HEIGHT_NORMAL + CONTROL_GAP_XY) * yCount), 
-            //         CONTROL_WIDTH_NORMAL, CONTROL_HEIGHT_NORMAL,
-            //     hwnd, (HMENU) ID_STATIC_LABEL_ONE, NULL, NULL
-            // );
-            // ...better?
-            int a = 2, b = 5;
-            int r = a + b;
-            wchar_t resultString;
-            
-            WINDOW labelOne;
-            labelOne.SIZE = GetCoordinates(&xCount, &yCount, &row, CONST_DOUBLE, CONST_NORMAL, 0);
-            labelOne.id = ID_STATIC_LABEL_ONE;
-            
-            if (!ec) {
-                HWND staticLabelOne = PlaceWindow(labelOne, hwnd, new wchar_t[]{L"Connected!"}, new wchar_t[]{L"STATIC"});
-            } else {
-                HWND staticLabelOne = PlaceWindow(labelOne, hwnd, new wchar_t[]{L"Failed!"}, new wchar_t[]{L"STATIC"});
-            }
-        }
-        break;
-        case WM_COMMAND:
-        {
+        CreateWindowW(
+            L"STATIC", result, WS_VISIBLE | WS_CHILD,
+            window.SIZE.xStart, window.SIZE.yStart, window.SIZE.width, window.SIZE.height,
+            hwnd, (HMENU)((INT_PTR)window.id), NULL, NULL
+        );
+    }
+    break;
+    case WM_COMMAND:
+    {
+    }
+    break;
+    case WM_NOTIFY:
+    {
+    }
+    break;
+    case WM_CTLCOLORSTATIC:
+    {
+        /*
+        If a handle to a brush is not returned, then DefWindowProc will be returned instead, overwritting
+        the colours for static controls
+        */
+        int id = GetDlgCtrlID((HWND)lParam);
 
-        }
-        break;
-        case WM_NOTIFY:
+        if (id > RANGE_IDS_STATIC_LABEL && id <= (RANGE_IDS_STATIC_LABEL + RANGE_IDS_GAP))
         {
+            SetTextColor((HDC)wParam, RGB(0, 0, 0));
+            return (INT_PTR)CreateSolidBrush(RGB(255, 255, 255));
+        }
+        else if (id > RANGE_IDS_STATIC_ERROR && id <= (RANGE_IDS_STATIC_ERROR + RANGE_IDS_GAP))
+        {
+            SetTextColor((HDC)wParam, RGB(128, 0, 0));
+            return (INT_PTR)CreateSolidBrush(RGB(192, 192, 192));
+        }
+        else if (id > RANGE_IDS_STATIC_HEADER && id <= (RANGE_IDS_STATIC_HEADER + RANGE_IDS_GAP))
+        {
+            // Can font
+            SetTextColor((HDC)wParam, RGB(0, 0, 0));
+            return (INT_PTR)CreateSolidBrush(RGB(128, 128, 128));
+        }
+        SetTextColor((HDC)wParam, RGB(128, 0, 255));
+        return (INT_PTR)CreateSolidBrush(RGB(64, 64, 64));
+    }
+    break;
+    case WM_CLOSE:
+    {
+        DestroyWindow(hwnd);
+        return 0;
+    }
+    break;
+    case WM_DESTROY:
+    {
+        PostQuitMessage(0);
+        return 0;
+    }
+    break;
 
-        }
-        break;
-        case WM_CTLCOLORSTATIC:
-        {
-            /*
-            If a handle to a brush is not returned, then DefWindowProc will be returned instead, overwritting 
-            the colours for static controls
-            */
-            int id = GetDlgCtrlID((HWND) lParam);
-
-            if ( id > RANGE_IDS_STATIC_LABEL && id <= (RANGE_IDS_STATIC_LABEL + RANGE_IDS_GAP))
-            {
-                SetTextColor((HDC) wParam, RGB(0,0,0));
-                return (INT_PTR)CreateSolidBrush(RGB(255,255,255));
-            } 
-            else if (id > RANGE_IDS_STATIC_ERROR && id <= (RANGE_IDS_STATIC_ERROR + RANGE_IDS_GAP))
-            {
-                SetTextColor((HDC) wParam, RGB(128,0,0));
-                return (INT_PTR)CreateSolidBrush(RGB(192,192,192));
-            }
-            else if (id > RANGE_IDS_STATIC_HEADER && id <= (RANGE_IDS_STATIC_HEADER + RANGE_IDS_GAP)) 
-            {
-                // Can font 
-                SetTextColor((HDC) wParam, RGB(0,0,0));
-                return (INT_PTR)CreateSolidBrush(RGB(128,128,128));
-            }
-            SetTextColor((HDC) wParam, RGB(128,0,255));
-            return (INT_PTR)CreateSolidBrush(RGB(64, 64, 64));
-        }
-        break;
-        case WM_CLOSE:
-        {
-            DestroyWindow(hwnd);
-            return 0;
-        }
-        break;
-        case WM_DESTROY:
-        {
-            PostQuitMessage(0);
-            return 0;
-        }
-        break;
-        
-        default:
-            return DefWindowProc(hwnd, msg, wParam, lParam);
+    default:
+        return DefWindowProc(hwnd, msg, wParam, lParam);
     }
     return 0;
 }
@@ -226,10 +217,9 @@ LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 HWND PlaceWindow(WINDOW window, HWND hwnd, wchar_t name[], wchar_t className[])
 {
     return CreateWindowW(
-            className, name, WS_VISIBLE | WS_CHILD,
-            window.SIZE.xStart, window.SIZE.yStart, window.SIZE.width, window.SIZE.height, 
-            hwnd, (HMENU) ((INT_PTR)window.id), NULL, NULL
-        );
+        className, name, WS_VISIBLE | WS_CHILD,
+        window.SIZE.xStart, window.SIZE.yStart, window.SIZE.width, window.SIZE.height,
+        hwnd, (HMENU)((INT_PTR)window.id), NULL, NULL);
 }
 
 /*
@@ -241,26 +231,24 @@ HWND PlaceWindow(WINDOW window, HWND hwnd, wchar_t name[], wchar_t className[])
     [REMOVED] xCount = pointless? Row replaces it
     [REMOVED] controlType = TODO: Headers will natively want a larger window size than a static-label type
 */
-WINDOW_SIZE GetCoordinates(int* xCount, int* yCount, int* row, int widthSpan, int heightSpan, bool isRowEnd)
+WINDOW_SIZE GetCoordinates(int *xCount, int *yCount, int *row, int widthSpan, int heightSpan, bool isRowEnd)
 {
     WINDOW_SIZE windowSizing;
 
-    
     // If widthSpan == 1 -> Normal; Else/If heightSpan == 2 -> Double; Else heightspan == 3 -> Triple
-    int controlWidth = (widthSpan == CONST_NORMAL ) ? CONTROL_WIDTH_NORMAL :
-        (widthSpan == CONST_DOUBLE) ? CONTROL_WIDTH_DOUBLE : CONTROL_HEIGHT_TRIPLE;
+    int controlWidth = (widthSpan == CONST_NORMAL) ? CONTROL_WIDTH_NORMAL : (widthSpan == CONST_DOUBLE) ? CONTROL_WIDTH_DOUBLE
+                                                                                                        : CONTROL_HEIGHT_TRIPLE;
 
     // If heightSpan == 1 -> Normal; Else/If heightSpan == 2 -> Double; Else heightspan == 3 -> Triple
-    int controlHeight = (heightSpan == CONST_NORMAL) ? CONTROL_HEIGHT_NORMAL :
-        (heightSpan == CONST_DOUBLE) ? CONTROL_HEIGHT_DOUBLE : CONTROL_HEIGHT_TRIPLE;
-    
-    
-    int xLocation = CONTROL_POSITION_X_DEFAULT + ( (*row) * (CONTROL_WIDTH_NORMAL + CONTROL_GAP_XY));
-    int yLocation = CONTROL_POSITION_Y_DEFAULT + ( (*yCount) * (CONTROL_HEIGHT_NORMAL + CONTROL_GAP_XY));
+    int controlHeight = (heightSpan == CONST_NORMAL) ? CONTROL_HEIGHT_NORMAL : (heightSpan == CONST_DOUBLE) ? CONTROL_HEIGHT_DOUBLE
+                                                                                                            : CONTROL_HEIGHT_TRIPLE;
+
+    int xLocation = CONTROL_POSITION_X_DEFAULT + ((*row) * (CONTROL_WIDTH_NORMAL + CONTROL_GAP_XY));
+    int yLocation = CONTROL_POSITION_Y_DEFAULT + ((*yCount) * (CONTROL_HEIGHT_NORMAL + CONTROL_GAP_XY));
 
     *xCount = *xCount + widthSpan;
     *row = (*xCount) % CONTROL_POSITION_ROW_COUNT;
-    if (isRowEnd) 
+    if (isRowEnd)
     {
         *yCount += heightSpan;
     }
@@ -296,9 +284,12 @@ bool PrintJsonToFile(std::string JsonResponse)
     file.open(JsonOutputfilePath);
     bool operationResult = false;
 
-    if (!file.is_open()) {
+    if (!file.is_open())
+    {
         std::cerr << "Could not open file" << endl;
-    } else {
+    }
+    else
+    {
         file << JsonResponse << endl;
         operationResult = true;
     }
@@ -309,10 +300,12 @@ bool PrintJsonToFile(std::string JsonResponse)
 /*
     JSON Parsing
  */
-bool ParseJsonToWeatherObject(vector<char> jsonResponseChar) {
+bool ParseJsonToWeatherObject(vector<char> jsonResponseChar)
+{
     Response response = GetResponseObject(jsonResponseChar);
-
     Weather weatherData = MapJsonToWeather::MapWeatherObject(response.JSON);
-    
+    APIdata = weatherData;
+
     return false;
 }
+
