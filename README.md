@@ -1,4 +1,4 @@
-# vsCodeWinApi
-Using Windows and OpenWeather API
+# WeatherApp
+Using Windows, OpenWeather, and ASIO APIs
 
-Learning to use both as well as general C++ learning
+This is to facilitate learning C++ 
